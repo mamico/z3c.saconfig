@@ -8,7 +8,7 @@ from z3c.saconfig.interfaces import ISiteScopedSession
 from zope import component
 from zope.event import notify
 from zope.interface import implementer
-from zope.sqlalchemy import ZopeTransactionExtension
+from zope.sqlalchemy import register
 
 import sqlalchemy
 import threading
@@ -23,8 +23,7 @@ except ImportError:
 
 SESSION_DEFAULTS = dict(
     autocommit=False,
-    autoflush=True,
-    extension=ZopeTransactionExtension())
+    autoflush=True)
 
 
 @implementer(IScopedSession)
@@ -52,7 +51,6 @@ class GloballyScopedSession(object):
 
         autocommit = False
         autoflush = True
-        extension = ZopeTransactionExtension()
 
         Normally you wouldn't pass these in, but if you have the need
         to override them, you could.
@@ -66,7 +64,9 @@ class GloballyScopedSession(object):
             engine_factory = component.getUtility(IEngineFactory,
                                                   name=self.engine)
             kw['bind'] = engine_factory()
-        return sqlalchemy.orm.create_session(**kw)
+        session = sqlalchemy.orm.create_session(**kw)
+        register(session)
+        return session
 
     def scopeFunc(self):
         return get_ident()
